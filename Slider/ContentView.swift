@@ -44,16 +44,28 @@ struct ContentView: View {
     }
     
     func moveTile(at index: Int) {
-        let offsets = [-4, 4, -1, 1]
-        for offset in offsets {
+      let offsets = [-4, 4, -1, 1]
+      if tiles[index] == 1 {
+        let specialOffsets = [-5, 5] // Add diagonal offsets
+        for offset in offsets + specialOffsets {
+          let neighborIndex = index + offset
+          if neighborIndex >= 0 && neighborIndex < 16 && tiles[neighborIndex] == 0 {
+            tiles.swapAt(index, neighborIndex)
+            return
+          }
+        }
+      } else {
+          let offsets = [-4, 4, -1, 1] // Existing offsets
+          for offset in offsets {
             let neighborIndex = index + offset
             if neighborIndex >= 0 && neighborIndex < 16 && abs(tiles[index] - tiles[neighborIndex]) > 1 {
-                if tiles[neighborIndex] == 0 {
-                    tiles.swapAt(index, neighborIndex)
-                    return
-                }
+              if tiles[neighborIndex] == 0 {
+                tiles.swapAt(index, neighborIndex)
+                return
+              }
             }
-        }
+          }
+      }
     }
     
     func isSolved() -> Bool {
