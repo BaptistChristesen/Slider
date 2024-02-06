@@ -12,7 +12,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var tiles = (1...15).map { $0 }.shuffled() + [0]
     let columns = Array(repeating: GridItem(.flexible()), count: 4)
-
+    
     var body: some View {
         VStack {
             LazyVGrid(columns: columns) {
@@ -33,7 +33,9 @@ struct ContentView: View {
                 }
             }
             .padding()
-            
+            Button("Shuffle") {
+                shuffleTiles()
+            }
             if isSolved() {
                 Text("Congratulations! You solved the puzzle!")
                     .padding()
@@ -44,33 +46,50 @@ struct ContentView: View {
     }
     
     func moveTile(at index: Int) {
-      let offsets = [-4, 4, -1, 1]
-      if tiles[index] == 1 {
-        let specialOffsets = [-5, 5] // Add diagonal offsets
-        for offset in offsets + specialOffsets {
-          let neighborIndex = index + offset
-          if neighborIndex >= 0 && neighborIndex < 16 && tiles[neighborIndex] == 0 {
-            tiles.swapAt(index, neighborIndex)
-            return
-          }
-        }
-      } else {
-          let offsets = [-4, 4, -1, 1] // Existing offsets
-          for offset in offsets {
+        let offsets = [-4, 4, -1, 1]  // Only allow horizontal and vertical movement
+        for offset in offsets {
             let neighborIndex = index + offset
-            if neighborIndex >= 0 && neighborIndex < 16 && abs(tiles[index] - tiles[neighborIndex]) > 1 {
-              if tiles[neighborIndex] == 0 {
+            if neighborIndex >= 0 && neighborIndex < 16 && tiles[neighborIndex] == 0 {
                 tiles.swapAt(index, neighborIndex)
                 return
-              }
             }
-          }
-      }
+        }
     }
     
     func isSolved() -> Bool {
         let targetTiles = Array(1...15)
         return Array(tiles.prefix(15)) == targetTiles
+    }
+    private func isSolvable(tiles: [Int]) -> Bool {
+        let inversions = countInversions(tiles: tiles)
+        let blankOnEvenRowFromBottom = (tiles.firstIndex(of: 0)! / 4) % 2 == 0
+        return (inversions % 2 == 0) == blankOnEvenRowFromBottom
+    }
+
+        
+    private func countInversions(tiles: [Int]) -> Int {
+        var inversions = 0
+        for i in 0..<tiles.count {
+            for j in (i + 1)..<tiles.count {
+                if tiles[i] != 0 && tiles[j] != 0 && tiles[i] > tiles[j] {
+                    inversions += 1
+                }
+            }
+        }
+        return inversions
+    }
+    private func shuffleTiles() {
+        repeat {
+            tiles.shuffle()
+        } while !isSolvable(tiles: tiles) && isLastTwoTilesSwapped(tiles: tiles)
+    }
+    private func isLastTwoTilesSwapped(tiles: [Int]) -> Bool {
+        for i in stride(from: 2, to: 16, by: 4) {
+            if tiles[i] < tiles[i-1] {
+                return true
+            }
+        }
+        return false
     }
 }
 
