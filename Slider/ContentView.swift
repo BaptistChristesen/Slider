@@ -7,19 +7,17 @@
 
 import SwiftUI
 
-import SwiftUI
-
 struct ContentView: View {
-    @State private var tiles = (1...15).map { $0 }.shuffled() + [0]
-    let columns = Array(repeating: GridItem(.flexible()), count: 4)
+    @State private var tiles = [1, 2, 3, 4, 0, 5, 7, 8, 6] // Start with blank in center
+    let columns = Array(repeating: GridItem(.flexible()), count: 3)
     
     var body: some View {
         VStack {
             LazyVGrid(columns: columns) {
-                ForEach(0..<16) { index in
+                ForEach(0..<9) { index in
                     if tiles[index] != 0 {
                         Text("\(tiles[index])")
-                            .frame(width: 50, height: 50)
+                            .frame(width: 100, height: 100)
                             .background(Color.orange)
                             .cornerRadius(10)
                             .onTapGesture {
@@ -34,7 +32,7 @@ struct ContentView: View {
             }
             .padding()
             Button("Shuffle") {
-                shuffleTiles()
+                shuffleBoardUntilSolvable()
             }
             if isSolved() {
                 Text("Congratulations! You solved the puzzle!")
@@ -46,50 +44,44 @@ struct ContentView: View {
     }
     
     func moveTile(at index: Int) {
-        let offsets = [-4, 4, -1, 1]  // Only allow horizontal and vertical movement
+        let offsets = [-3, 3, -1, 1] // Only allow horizontal and vertical movement
         for offset in offsets {
             let neighborIndex = index + offset
-            if neighborIndex >= 0 && neighborIndex < 16 && tiles[neighborIndex] == 0 {
+            if neighborIndex >= 0 && neighborIndex < 9 && tiles[neighborIndex] == 0 {
                 tiles.swapAt(index, neighborIndex)
                 return
             }
         }
     }
     
-    func isSolved() -> Bool {
-        let targetTiles = Array(1...15)
-        return Array(tiles.prefix(15)) == targetTiles
+    func shuffleBoardUntilSolvable() {
+        repeat {
+            // Ensure center tile stays blank while shuffling
+            var shuffledTiles = (1...8).shuffled()
+            shuffledTiles.insert(0, at: 4)
+            tiles = shuffledTiles
+        } while !isSolvable(board: tiles)
     }
-    private func isSolvable(tiles: [Int]) -> Bool {
-        let inversions = countInversions(tiles: tiles)
-        let blankOnEvenRowFromBottom = (tiles.firstIndex(of: 0)! / 4) % 2 == 0
-        return (inversions % 2 == 0) == blankOnEvenRowFromBottom
-    }
-
-        
-    private func countInversions(tiles: [Int]) -> Int {
-        var inversions = 0
-        for i in 0..<tiles.count {
-            for j in (i + 1)..<tiles.count {
-                if tiles[i] != 0 && tiles[j] != 0 && tiles[i] > tiles[j] {
-                    inversions += 1
+    
+    func isSolvable(board: [Int]) -> Bool {
+        // Calculate inversion count
+        var inversionCount = 0
+        for i in 0..<board.count - 1 {
+            for j in i + 1..<board.count {
+                if board[i] > board[j] && board[j] == 0 {
+                    inversionCount += 1
                 }
             }
         }
-        return inversions
+        
+        // Solvable if on an even numbered row or inversion count is even
+        let blankRow = board.firstIndex(of: 0)! / 3
+        return blankRow % 2 == 0 || inversionCount % 2 == 0
     }
-    private func shuffleTiles() {
-        repeat {
-            tiles.shuffle()
-        } while !isSolvable(tiles: tiles) && isLastTwoTilesSwapped(tiles: tiles)
-    }
-    private func isLastTwoTilesSwapped(tiles: [Int]) -> Bool {
-        for i in stride(from: 2, to: 16, by: 4) {
-            if tiles[i] < tiles[i-1] {
-                return true
-            }
-        }
-        return false
+    
+    func isSolved() -> Bool {
+        let targetTiles = Array(1...8) + [0]
+        return Array(tiles.prefix(9)) == targetTiles
     }
 }
 
