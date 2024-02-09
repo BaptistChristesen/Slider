@@ -8,32 +8,55 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var tiles = [1, 2, 3, 4, 0, 5, 7, 8, 6] // Start with blank in center
+    
+    // Start with blank in center (thats the "0")
+    @State private var tiles = [1, 2, 3, 4, 0, 5, 7, 8, 6]
+    
+    // Defines the layout of the tiles (3 columns)
     let columns = Array(repeating: GridItem(.flexible()), count: 3)
     
     var body: some View {
         VStack {
+            
+            // LazyVGrid arranges the tiles in a grid with 3 columns
             LazyVGrid(columns: columns) {
+                
+                // Loop through each tile index (0 to 8), if the tile is not blank (0) display the tile.
                 ForEach(0..<9) { index in
                     if tiles[index] != 0 {
                         Text("\(tiles[index])")
                             .frame(width: 100, height: 100)
                             .background(Color.orange)
                             .cornerRadius(10)
+                        //following two lines allow tiles to move around where you click
                             .onTapGesture {
                                 moveTile(at: index)
                             }
+                        
+                    // Else it handles the blank space. if the puzzle isnt solved keep the tile blank (0), otherwise show the 9 the same as the other numbered tiles
                     } else {
-                        Rectangle()
-                            .fill(Color.white)
-                            .frame(width: 50, height: 50)
+                        if (!isSolved()){
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 100, height: 100)
+                        }
+                        else {
+                            Text("9")
+                                .frame(width: 100, height: 100)
+                                .background(Color.green)
+                                .cornerRadius(10)
+                        }
                     }
                 }
             }
             .padding()
+            
+            // Button to run the function that shuffles the tiles
             Button("Shuffle") {
                 shuffleBoardUntilSolvable()
             }
+            
+            // chucks if the puzzle is solved, and if so it
             if isSolved() {
                 Text("Congratulations! You solved the puzzle!")
                     .padding()
@@ -43,8 +66,10 @@ struct ContentView: View {
         }
     }
     
+    // This is how the tiles actually move.
+    // Sets an array of the moves it will make on the board. Basically, to move the tile up it sets the tile move in the array via the offset (moving by a -3 offset moves it up one row visually but 3 indecies backwards in the array.
     func moveTile(at index: Int) {
-        let offsets = [-3, 3, -1, 1] // Only allow horizontal and vertical movement
+        let offsets = [-3, 3, -1, 1]
         for offset in offsets {
             let neighborIndex = index + offset
             if neighborIndex >= 0 && neighborIndex < 9 && tiles[neighborIndex] == 0 {
@@ -55,6 +80,7 @@ struct ContentView: View {
     }
     
     func shuffleBoardUntilSolvable() {
+        // Repeat the shuffle until solveable
         repeat {
             // Ensure center tile stays blank while shuffling
             var shuffledTiles = (1...8).shuffled()
@@ -63,6 +89,8 @@ struct ContentView: View {
         } while !isSolvable(board: tiles)
     }
     
+    // Checks the inversion count. if the blank (0) tile is on an even row it is solveable if an even number of inversions is required, otherwise and odd number of inversions is required.
+    // While my current version keeps the blank tile on the same row always, there is no need to change the function as it still works perfectly fine.
     func isSolvable(board: [Int]) -> Bool {
         // Calculate inversion count
         var inversionCount = 0
@@ -79,6 +107,7 @@ struct ContentView: View {
         return blankRow % 2 == 0 || inversionCount % 2 == 0
     }
     
+    // Checks if the puzzle is solved by checking fi the first 8 inidcies are in order, with the blank (0) tile at the end.
     func isSolved() -> Bool {
         let targetTiles = Array(1...8) + [0]
         return Array(tiles.prefix(9)) == targetTiles
